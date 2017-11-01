@@ -2,6 +2,7 @@ package ke.co.the_noel.reverseformpesa;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
@@ -25,7 +26,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void handleMessage(String smsBody, String address) {
-        Toast.makeText(inst, "Message " + smsBody, Toast.LENGTH_SHORT).show();
+
+        int i = smsBody.indexOf(' ');
+        String code = smsBody.substring(0, i);
+        if (address.equals("MPESA")){
+            Log.i("MESSAGE", smsBody);
+            Log.i("CODE", code);
+            Log.i("ADDRESS", address);
+        }
     }
 
 
