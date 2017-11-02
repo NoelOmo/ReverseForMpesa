@@ -1,5 +1,9 @@
 package ke.co.the_noel.reverseformpesa;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Base64;
@@ -28,6 +32,12 @@ public class MainActivity extends AppCompatActivity {
     RetrofitBuilder retrofitBuilder;
     API retro;
 
+    NotificationCompat.Builder mBuilder;
+    NotificationManager mNotifyMgr;
+    int mNotificationId = 001;
+    PendingIntent piDismiss;
+    PendingIntent piReverse;
+
     private static MainActivity inst;
 
     public static MainActivity instance() {
@@ -46,6 +56,22 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         getNewToken();
+
+        Intent dismissIntent = new Intent(this, MainActivity.class);
+        dismissIntent.setAction("Dismiss");
+        piDismiss = PendingIntent.getService(this, 0, dismissIntent, 0);
+
+        Intent reverseIntent = new Intent(this, MainActivity.class);
+        reverseIntent.setAction("Reverse");
+        piReverse = PendingIntent.getService(this, 0, reverseIntent, 0);
+
+        mBuilder =  new NotificationCompat.Builder(this)
+                        .setSmallIcon(R.drawable.ic_launcher_background)
+        .setStyle(new NotificationCompat.BigTextStyle());
+
+        mNotifyMgr =  (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+
 
     }
 
@@ -98,6 +124,13 @@ public class MainActivity extends AppCompatActivity {
             Log.i("MESSAGE", smsBody);
             Log.i("CODE", code);
             Log.i("ADDRESS", address);
+            mBuilder.setContentTitle(code);
+            mBuilder.setContentText("You have just paid Ksh1,000 to SOME ORG, for account 178505" );
+            mBuilder.setStyle(new NotificationCompat.BigTextStyle()
+            .bigText("You have just paid Ksh1,000 to SOME ORG, for account 178505"))
+                    .addAction (R.drawable.ic_launcher_background,  "Dismiss", piDismiss)
+                    .addAction (R.drawable.ic_launcher_background, "Reverse", piReverse);
+            mNotifyMgr.notify(mNotificationId, mBuilder.build());
         }
     }
 
