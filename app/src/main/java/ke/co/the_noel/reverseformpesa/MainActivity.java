@@ -78,12 +78,12 @@ public class MainActivity extends AppCompatActivity {
                     Log.i("ACCESS_TOKEN", response.body().accessToken);
                 else
                     Log.i("ACCESS_TOKEN", "It failed");
-
-                Log.i("KAZI", "Gani hii");
             }
 
             @Override
             public void onFailure(Call<AuthResponseModel> call, Throwable t) {
+                Log.i("FAILED", t.getLocalizedMessage());
+                t.printStackTrace();
 
             }
         });
