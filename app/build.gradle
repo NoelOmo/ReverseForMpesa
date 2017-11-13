@@ -17,6 +17,10 @@ android {
         }
     }
     buildToolsVersion '26.0.2'
+
+    aaptOptions {
+        noCompress "cer"
+    }
 }
 
 dependencies {

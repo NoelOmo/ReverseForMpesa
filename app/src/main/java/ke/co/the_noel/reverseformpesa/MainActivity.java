@@ -3,6 +3,8 @@ package ke.co.the_noel.reverseformpesa;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
+import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,6 +13,7 @@ import android.util.Log;
 
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -20,6 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PublicKey;
 import java.security.Security;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -54,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
     PendingIntent piDismiss;
     PendingIntent piReverse;
 
+    String securityCert;
+
     private static MainActivity inst;
 
     public static MainActivity instance() {
@@ -71,6 +77,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        securityCert = "file:///android_asset/cert.cer";
+        try {
+            AssetFileDescriptor assetFileDescriptor = this.getAssets().openFd("cert.cer");
+            FileDescriptor fileDescriptor = assetFileDescriptor.getFileDescriptor();
+            encryptInitiatorPassword(fileDescriptor, "1234");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         getNewToken();
 
         Intent dismissIntent = new Intent(this, MainActivity.class);
@@ -86,6 +102,8 @@ public class MainActivity extends AppCompatActivity {
         .setStyle(new NotificationCompat.BigTextStyle());
 
         mNotifyMgr =  (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+
 
 
 
@@ -160,15 +178,15 @@ public class MainActivity extends AppCompatActivity {
 
 
     // Function to encrypt the initiator credentials
-    public static String encryptInitiatorPassword(String securityCertificate, String password) {
+    public static String encryptInitiatorPassword(FileDescriptor securityCertificate, String password) {
         String encryptedPassword = "YOUR_INITIATOR_PASSWORD";
         try {
             Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
             byte[] input = password.getBytes();
 
             Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", "BC");
-            FileInputStream fin = new FileInputStream(new File(securityCertificate));
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            FileInputStream fin = new FileInputStream(securityCertificate);
+            CertificateFactory cf = CertificateFactory.getInstance("X.509", "BC");
             X509Certificate certificate = (X509Certificate) cf.generateCertificate(fin);
             PublicKey pk = certificate.getPublicKey();
             cipher.init(Cipher.ENCRYPT_MODE, pk);
@@ -180,21 +198,28 @@ public class MainActivity extends AppCompatActivity {
 
         } catch (NoSuchAlgorithmException ex) {
             //Logger.getLogger(PasswordUtil.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         } catch (NoSuchProviderException ex) {
             //Logger.getLogger(PasswordUtil.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         } catch (NoSuchPaddingException ex) {
             //Logger.getLogger(PasswordUtil.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (FileNotFoundException ex) {
-            //Logger.getLogger(PasswordUtil.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         } catch (CertificateException ex) {
             //Logger.getLogger(PasswordUtil.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         } catch (InvalidKeyException ex) {
             //Logger.getLogger(PasswordUtil.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         } catch (IllegalBlockSizeException ex) {
             //Logger.getLogger(PasswordUtil.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         } catch (BadPaddingException ex) {
             //Logger.getLogger(PasswordUtil.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         }
+
+        Log.i("ENCRYPTED PASSWORD", encryptedPassword + "SUCCESS");
 
         return encryptedPassword;
     }
