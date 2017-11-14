@@ -4,6 +4,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
+import android.content.res.AssetManager;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -17,6 +18,7 @@ import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -59,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     PendingIntent piReverse;
 
     String securityCert;
+    AssetManager assetManager;
 
     private static MainActivity inst;
 
@@ -78,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         securityCert = "file:///android_asset/cert.cer";
+        assetManager = getAssets();
         try {
             AssetFileDescriptor assetFileDescriptor = this.getAssets().openFd("cert.cer");
             FileDescriptor fileDescriptor = assetFileDescriptor.getFileDescriptor();
@@ -178,7 +182,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     // Function to encrypt the initiator credentials
-    public static String encryptInitiatorPassword(FileDescriptor securityCertificate, String password) {
+    public String encryptInitiatorPassword(FileDescriptor securityCertificate, String password) {
+
         String encryptedPassword = "YOUR_INITIATOR_PASSWORD";
         try {
             Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
@@ -186,8 +191,9 @@ public class MainActivity extends AppCompatActivity {
 
             Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", "BC");
             FileInputStream fin = new FileInputStream(securityCertificate);
+            InputStream inputStream = assetManager.open("cert.cer");
             CertificateFactory cf = CertificateFactory.getInstance("X.509", "BC");
-            X509Certificate certificate = (X509Certificate) cf.generateCertificate(fin);
+            X509Certificate certificate = (X509Certificate) cf.generateCertificate(inputStream);
             PublicKey pk = certificate.getPublicKey();
             cipher.init(Cipher.ENCRYPT_MODE, pk);
 
@@ -217,6 +223,8 @@ public class MainActivity extends AppCompatActivity {
         } catch (BadPaddingException ex) {
             //Logger.getLogger(PasswordUtil.class.getName()).log(Level.SEVERE, null, ex);
             ex.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         Log.i("ENCRYPTED PASSWORD", encryptedPassword + "SUCCESS");
