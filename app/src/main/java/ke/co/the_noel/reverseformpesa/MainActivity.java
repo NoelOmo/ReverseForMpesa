@@ -15,6 +15,9 @@ import android.support.v7.widget.Toolbar;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 
 
@@ -53,7 +56,7 @@ import retrofit2.Callback;
 import retrofit2.Retrofit;
 import retrofit2.Call;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ReverseConfirmationDialog.ReverseIt {
 
     OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
     RetrofitBuilder retrofitBuilder;
@@ -261,4 +264,16 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public void showLoadingDialog(){
+        Animation bottomUp = AnimationUtils.loadAnimation(getApplicationContext(),
+                R.anim.bottom_up);
+        ViewGroup hiddenPanel = findViewById(R.id.hidden_panel);
+        hiddenPanel.startAnimation(bottomUp);
+        hiddenPanel.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void handleReverseButtonClick() {
+        showLoadingDialog();
+    }
 }
