@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.net.Uri;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -13,6 +14,8 @@ import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Base64;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 
 
 import java.io.File;
@@ -65,6 +68,9 @@ public class MainActivity extends AppCompatActivity {
     String securityCert;
     AssetManager assetManager;
     Toolbar toolbar;
+    String smsBody;
+
+    Button btnReverse;
 
     private static MainActivity inst;
 
@@ -82,6 +88,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        btnReverse = findViewById(R.id.btn_reverse);
+
+        btnReverse.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showReverseDialog();
+            }
+        });
 
         securityCert = "file:///android_asset/cert.cer";
         assetManager = getAssets();
@@ -162,6 +176,7 @@ public class MainActivity extends AppCompatActivity {
         int i = smsBody.indexOf(' ');
         String code = smsBody.substring(0, i);
         if (address.equals("MPESA")){
+            this.smsBody = smsBody;
             Log.i("MESSAGE", smsBody);
             Log.i("CODE", code);
             Log.i("ADDRESS", address);
@@ -235,5 +250,15 @@ public class MainActivity extends AppCompatActivity {
         return encryptedPassword;
     }
 
+    public void showReverseDialog(){
+        FragmentManager fm = getSupportFragmentManager();
+        Bundle b = new Bundle();
+        b.putString("text_msg", smsBody);
+        ReverseConfirmationDialog dialogFragment = new ReverseConfirmationDialog();
+
+        dialogFragment.setArguments(b);
+        dialogFragment.show(fm, "Login failed");
+
+    }
 
 }
