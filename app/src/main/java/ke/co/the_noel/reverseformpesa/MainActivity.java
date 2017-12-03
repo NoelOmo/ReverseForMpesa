@@ -3,11 +3,16 @@ package ke.co.the_noel.reverseformpesa;
 import android.Manifest;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.arch.persistence.room.Room;
+import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -41,6 +46,11 @@ import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -50,7 +60,10 @@ import javax.crypto.NoSuchPaddingException;
 import ke.co.the_noel.reverseformpesa.API.API;
 import ke.co.the_noel.reverseformpesa.API.APIContract;
 import ke.co.the_noel.reverseformpesa.API.RetrofitBuilder;
+import ke.co.the_noel.reverseformpesa.database.SMSDatabase;
 import ke.co.the_noel.reverseformpesa.models.AuthResponseModel;
+import ke.co.the_noel.reverseformpesa.room.SMS;
+import ke.co.the_noel.reverseformpesa.room.SMSDao;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -78,6 +91,9 @@ public class MainActivity extends AppCompatActivity implements ReverseConfirmati
     String smsBody;
 
     Button btnReverse;
+    SMSDatabase db;
+    ArrayList<String> smsList;
+    ArrayList<SMS> allSMS = new ArrayList<>();
 
     //Constants
     int PERMISSION_REQUEST_READ_SMS = 9799;
@@ -98,9 +114,16 @@ public class MainActivity extends AppCompatActivity implements ReverseConfirmati
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         btnReverse = findViewById(R.id.btn_reverse);
+        db = Room.databaseBuilder(getApplicationContext(), SMSDatabase.class, "dev-reverse").build();
 
         requestForSMSPermission();
+
+        if (checkForSMSPermission()){
+            readAllSms();
+        }
+
 
 
         btnReverse.setOnClickListener(new View.OnClickListener() {
@@ -138,11 +161,61 @@ public class MainActivity extends AppCompatActivity implements ReverseConfirmati
 
         mNotifyMgr =  (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
+    }
+
+    private void readAllSms() {
+
+        if (db == null){
+            return;
+        }
 
 
+        Uri inboxURI = Uri.parse("content://sms/inbox");
+        smsList = new ArrayList<>();
+        ContentResolver cr = getContentResolver();
+
+        SMS sms = new SMS();
+        Cursor c = cr.query(inboxURI,null,null,null,null);
+        assert c != null;
+        while (c.moveToNext()){
+            String address = c.getString(c.getColumnIndexOrThrow("address"));
+            String textBody = c.getString(c.getColumnIndexOrThrow("body"));
+
+            if (address.equals("MPESA") || address.equals("+16505556789")){
+                sms = new SMS();
+                sms.setSmsBody(textBody);
+                sms.setSmsTime("");
+                allSMS.add(sms);
+
+
+
+
+
+            }
+                //smsList.add("Number: "+ address + "\n" + "Body: "+ textBody );
+
+        }
+        PopulateDbAsync task = new PopulateDbAsync(db, allSMS);
+        task.execute();
+
+        c.close();
+    }
+
+    public static void updateDB(SMSDatabase db, ArrayList<SMS> smsArrayList1){
+        db.smsDao().nsertAll(smsArrayList1);
+
+        String sampleString = "DY28XV679 Confirmed. Ksh4,000.00 sent to KCB Paybill AC for account 1137238445 on 9/9/13 at 11:31 PM\n" +
+                "New M-PESA balance is Ksh22.00.";
+        String[] items = sampleString.split(" ");
+        List<String> itemList = Arrays.asList(items);
+        for (String s : itemList){
+            Log.i("STRING", s);
+        }
 
 
     }
+
+
 
     private void requestForSMSPermission() {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1){
@@ -345,5 +418,23 @@ public class MainActivity extends AppCompatActivity implements ReverseConfirmati
                 })
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .show();
+    }
+
+
+    private static class PopulateDbAsync extends AsyncTask<Void, Void, Void> {
+
+        private final SMSDatabase mDb;
+        private final ArrayList<SMS> smsArrayList;
+
+        PopulateDbAsync(SMSDatabase db, ArrayList<SMS> smsArrayList1) {
+            mDb = db;
+            smsArrayList = smsArrayList1;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            updateDB(mDb, smsArrayList);
+            return null;
+        }
     }
 }
