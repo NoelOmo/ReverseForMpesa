@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.telephony.SmsMessage;
+import android.util.Log;
 import android.widget.Toast;
 
 import ke.co.the_noel.reverseformpesa.MainActivity;
@@ -18,20 +19,21 @@ public class SMSBroadcastReceiver extends BroadcastReceiver {
         Bundle intentExtras = intent.getExtras();
         if (intentExtras != null) {
             Object[] sms = (Object[]) intentExtras.get(SMS_BUNDLE);
-            String smsMessageStr = "";
             String smsBody = "", address = "";
             for (int i = 0; i < sms.length; ++i) {
                 SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) sms[i]);
 
                 smsBody = smsMessage.getMessageBody().toString();
                 address = smsMessage.getOriginatingAddress();
+                Log.i("SMS ADDRESS", address);
 
             }
-            Toast.makeText(context, smsMessageStr, Toast.LENGTH_SHORT).show();
 
             //this will update the UI with message
-            MainActivity inst = MainActivity.instance();
-            inst.handleMessage(smsBody, address);
+            if(address.equals("MPESA") || address.equals("+16505556789")) {
+                MainActivity inst = MainActivity.instance();
+                inst.handleMessage(smsBody, address);
+            }
         }
     }
 }

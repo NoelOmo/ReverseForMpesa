@@ -47,7 +47,7 @@
             android:layout_marginRight="8dp"
             android:layout_marginStart="8dp"
             android:layout_marginLeft="8dp"
-            android:layout_marginBottom="4dp"
+            android:layout_marginBottom="16dp"
             android:fontFamily="@font/dosis_light"
             android:textColor="#90112233"
             android:text="The text here!" />
@@ -55,7 +55,7 @@
         <Button
             android:id="@+id/btn_dialog_reverse"
             android:layout_width="match_parent"
-            android:layout_height="45dp"
+            android:layout_height="56dp"
             android:background="@color/colorAccent"
             android:fontFamily="@font/dosis_medium"
             android:textColor="#FFF"

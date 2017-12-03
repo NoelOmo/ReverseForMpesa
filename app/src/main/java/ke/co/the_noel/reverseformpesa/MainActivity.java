@@ -1,14 +1,20 @@
 package ke.co.the_noel.reverseformpesa;
 
+import android.Manifest;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
-import android.net.Uri;
+import android.os.Build;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -19,12 +25,11 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
+import android.widget.Toast;
 
 
-import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -33,7 +38,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PublicKey;
 import java.security.Security;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -75,6 +79,9 @@ public class MainActivity extends AppCompatActivity implements ReverseConfirmati
 
     Button btnReverse;
 
+    //Constants
+    int PERMISSION_REQUEST_READ_SMS = 9799;
+
     private static MainActivity inst;
 
     public static MainActivity instance() {
@@ -92,6 +99,9 @@ public class MainActivity extends AppCompatActivity implements ReverseConfirmati
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         btnReverse = findViewById(R.id.btn_reverse);
+
+        requestForSMSPermission();
+
 
         btnReverse.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -119,6 +129,7 @@ public class MainActivity extends AppCompatActivity implements ReverseConfirmati
 
         Intent reverseIntent = new Intent(this, MainActivity.class);
         reverseIntent.setAction("Reverse");
+        reverseIntent.putExtra("ReverseClicked", true);
         piReverse = PendingIntent.getService(this, 0, reverseIntent, 0);
 
         mBuilder =  new NotificationCompat.Builder(this)
@@ -131,6 +142,26 @@ public class MainActivity extends AppCompatActivity implements ReverseConfirmati
 
 
 
+    }
+
+    private void requestForSMSPermission() {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1){
+            if (!checkForSMSPermission()){
+
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.READ_SMS},
+                        PERMISSION_REQUEST_READ_SMS);
+            }
+        }
+    }
+
+    private boolean checkForSMSPermission() {
+        int smsRead = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS);
+        if (smsRead == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public void getNewToken(){
@@ -178,15 +209,15 @@ public class MainActivity extends AppCompatActivity implements ReverseConfirmati
 
         int i = smsBody.indexOf(' ');
         String code = smsBody.substring(0, i);
-        if (address.equals("MPESA")){
+        if (address.equals("MPESA") || address.equals("+16505556789")){
             this.smsBody = smsBody;
             Log.i("MESSAGE", smsBody);
             Log.i("CODE", code);
             Log.i("ADDRESS", address);
             mBuilder.setContentTitle(code);
-            mBuilder.setContentText("You have just paid Ksh1,000 to SOME ORG, for account 178505" );
+            mBuilder.setContentText(smsBody);
             mBuilder.setStyle(new NotificationCompat.BigTextStyle()
-            .bigText("You have just paid Ksh1,000 to SOME ORG, for account 178505"))
+            .bigText(smsBody))
                     .addAction (R.drawable.ic_launcher_background,  "Dismiss", piDismiss)
                     .addAction (R.drawable.ic_launcher_background, "Reverse", piReverse);
             mNotifyMgr.notify(mNotificationId, mBuilder.build());
@@ -275,5 +306,44 @@ public class MainActivity extends AppCompatActivity implements ReverseConfirmati
     @Override
     public void handleReverseButtonClick() {
         showLoadingDialog();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        if (requestCode == PERMISSION_REQUEST_READ_SMS){
+
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            }else {
+                showPermissionDeniedDialog();
+            }
+
+            }
+
+
+    }
+
+    private void showPermissionDeniedDialog() {
+        AlertDialog.Builder builder;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert);
+        } else {
+            builder = new AlertDialog.Builder(this);
+        }
+        builder.setTitle("Permission required")
+                .setMessage("This app requires permission to access your MPESA text messages in order to function properly. Reverse for Mpesa will now exit as the permission was not granted.")
+                .setPositiveButton("EXIT", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                       System.exit(1);
+                    }
+                })
+                .setNegativeButton("GRANT ACCESS", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        requestForSMSPermission();
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
     }
 }
